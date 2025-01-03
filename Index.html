@@ -1,0 +1,1604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <!-- Responsive viewport meta tag to fill screen on mobile devices -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Cardiac Anesthesia Handoff</title>
+  <style>
+    /* Basic resets & body layout for mobile responsiveness */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #f6f9fc;
+      color: #333;
+      /* Let the body fill the screen height on mobile */
+      min-height: 100vh;
+      /* For very wide screens, center content in a pleasing way */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Container that holds the entire wizard */
+    .wizard-container {
+      /* On mobile, we use nearly full width; 
+         on larger screens, we constrain it to a comfortable width.
+       */
+      width: 100%;
+      max-width: 600px;
+      background: #ffffff;
+      margin: 10px;
+      padding: 15px;
+      border-radius: 6px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+    }
+
+    h1, h2, h3, h4 {
+      margin: 0.5em 0;
+      text-align: center;
+    }
+    p {
+      margin: 0.5em 0;
+    }
+
+    /* Step navigation */
+    .wizard-step {
+      display: none; /* hidden by default; we show only the current step */
+    }
+    .wizard-step.active {
+      display: block;
+    }
+
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 15px;
+    }
+    .nav-buttons button {
+      cursor: pointer;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      font-size: 0.95rem;
+    }
+    .nav-buttons button:hover {
+      opacity: 0.9;
+    }
+    .btn-back {
+      background: #aaa;
+      color: #fff;
+    }
+    .btn-next {
+      background: #4682B4;
+      color: #fff;
+    }
+    .btn-preview {
+      background: #f09c42;
+      color: #fff;
+    }
+    .btn-finalize {
+      background: #1f8b2e;
+      color: #fff;
+    }
+
+    /* Input styling */
+    .input-row {
+      margin-bottom: 12px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input[type="text"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 6px;
+      font-size: 0.9rem;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    input.small-input {
+      width: 70px;
+      display: inline-block;
+      margin-left: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+
+    /* Multi-select boxes */
+    select[multiple] {
+      height: auto;
+      min-height: 100px;
+    }
+
+    /* The final preview area */
+    #previewPane {
+      display: none;
+      width: 100%;
+      max-width: 600px;
+      background: #fff;
+      margin: 10px;
+      padding: 15px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    #previewPane h2 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    /* Table styling inside dynamic sections */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    table th, table td {
+      text-align: left;
+      border: 1px solid #ccc;
+      padding: 6px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Cardiac Anesthesia Handoff</h2>
+  
+  <div class="wizard-container">
+    
+    <!-- STEP 1: Basic Info -->
+    <div class="wizard-step active" id="step1">
+      <h2>Step 1: Basic Info</h2>
+      <div class="input-row">
+        <label for="location">Location (ICU):</label>
+        <input type="text" id="location" placeholder="Unit/Room" />
+      </div>
+      <div class="input-row">
+        <label for="ageGender">Patient Age/Gender:</label>
+        <input type="text" id="ageGender" placeholder="" />
+      </div>
+      
+      <div class="input-row">
+        <label for="primaryDiag">Primary Diagnosis:</label>
+        <input type="text" id="primaryDiag" placeholder="" />
+      </div>
+      <div class="input-row">
+        <label for="surgeryPerf">Surgery Performed:</label>
+        <input type="text" id="surgeryPerf" placeholder="" />
+      </div>
+
+      <div class="input-row">
+        <label>Other PMH:</label>
+        <select id="otherPMHSelect" multiple size="12" style="width:100%;" onchange="updateOtherPMH()">
+          <optgroup label="Cardiac">
+            <option value="Hypertension">Hypertension</option>
+            <option value="Coronary Artery Disease">Coronary Artery Disease</option>
+            <option value="Mitral Regurgitation">Mitral Regurgitation</option>
+            <option value="Mitral Stenosis">Mitral Stenosis</option>
+            <option value="Aortic Stenosis">Aortic Stenosis</option>
+            <option value="Aortic Regurgitation">Aortic Regurgitation</option>
+            <option value="Tricuspid Regurgitation">Tricuspid Regurgitation</option>
+            <option value="HFrEF">HFrEF</option>
+            <option value="HFpEF">HFpEF</option>
+            <option value="Atrial Fibrillation">Atrial Fibrillation</option>
+            <option value="Atrial Flutter">Atrial Flutter</option>
+            <option value="SVT">SVT</option>
+            <option value="Ventricular Tachycardia">Ventricular Tachycardia</option>
+            <option value="Pacemaker">Pacemaker</option>
+            <option value="AICD">AICD</option>
+          </optgroup>
+          <optgroup label="Pulmonary">
+            <option value="OSA">OSA</option>
+            <option value="COPD">COPD</option>
+            <option value="Asthma">Asthma</option>
+          </optgroup>
+          <optgroup label="Renal">
+            <option value="CKD">CKD</option>
+            <option value="ESRD on Dialysis">ESRD on Dialysis</option>
+          </optgroup>
+          <optgroup label="Endocrine">
+            <option value="Diabetes Mellitus Type 2">Diabetes Mellitus Type 2</option>
+            <option value="Diabetes Mellitus Type 1">Diabetes Mellitus Type 1</option>
+            <option value="Hypothyroidism">Hypothyroidism</option>
+            <option value="Hyperthyroidism">Hyperthyroidism</option>
+          </optgroup>
+          <optgroup label="Neuro">
+            <option value="Stroke/TIA">Stroke/TIA</option>
+            <option value="Seizure Disorder">Seizure Disorder</option>
+            <option value="Parkinson's Disease">Parkinson's Disease</option>
+          </optgroup>
+          <optgroup label="Hematologic">
+            <option value="Anemia">Anemia</option>
+            <option value="Coagulopathy">Coagulopathy</option>
+          </optgroup>
+          <optgroup label="GI/Liver">
+            <option value="GERD">GERD</option>
+            <option value="Liver Disease">Liver Disease</option>
+            <option value="Obesity">Obesity</option>
+          </optgroup>
+          <optgroup label="Other Common">
+            <option value="Cancer">Cancer</option>
+            <option value="Dyslipidemia">Dyslipidemia</option>
+            <option value="Smoking">Smoking</option>
+            <option value="Alcohol Use Disorder">Alcohol Use Disorder</option>
+          </optgroup>
+          <option value="OtherPMH">Other (specify)</option>
+        </select>
+        
+        <!-- Container for 'Other' PMH text input -->
+        <div id="otherPMHContainer" class="hidden" style="margin-top:10px;">
+          <label for="otherPMHInput">Specify other PMH:</label>
+          <input type="text" id="otherPMHInput" placeholder="Type other diagnosis..." />
+        </div>
+
+        <!-- Stroke/TIA container -->
+        <div id="strokeTIAContainer" class="hidden" style="margin-top:10px;">
+          <label for="strokeTIAInput">Residual deficits (if any):</label>
+          <input type="text" id="strokeTIAInput" placeholder="Describe deficits..." />
+        </div>
+
+        <!-- ESRD last dialysis container -->
+        <div id="esrdDialysisContainer" class="hidden" style="margin-top:10px;">
+          <label for="lastDialysisInput">Date of last dialysis session:</label>
+          <input type="text" id="lastDialysisInput" placeholder="e.g. mm/dd/yyyy or 'today'" />
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" disabled>Back</button>
+        <button class="btn-next" onclick="goToStep(2)">Next</button>
+      </div>
+    </div>
+    
+    <!-- STEP 2: Airway -->
+    <div class="wizard-step" id="step2">
+      <h2>Step 2: Airway</h2>
+      <div class="input-row">
+        <label for="intubationMethod">Intubation Method:</label>
+        <select id="intubationMethod" onchange="toggleIntubationOther()">
+          <option value="mac3">MAC3</option>
+          <option value="mac4">MAC4</option>
+          <option value="miller2">Miller 2</option>
+          <option value="miller3">Miller 3</option>
+          <option value="videolaryngoscopy">Video Laryngoscopy</option>
+          <option value="fiberoptic">Fiberoptic</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="input-row hidden" id="intubationOtherRow">
+        <label for="intubationOtherInput">Specify Other Method:</label>
+        <input type="text" id="intubationOtherInput" placeholder="Describe method..." />
+      </div>
+      
+      <div class="input-row">
+        <label for="viewGrade">View Grade:</label>
+        <select id="viewGrade">
+          <option value="grade1" selected>Grade 1</option>
+          <option value="grade2">Grade 2</option>
+          <option value="grade3">Grade 3</option>
+          <option value="grade4">Grade 4</option>
+        </select>
+      </div>
+
+      <div class="input-row">
+        <label>Is the patient still intubated?</label><br/>
+        <label><input type="radio" name="stillIntubated" value="Yes" onclick="toggleTubeDetails()" checked/> Yes</label>
+        <label><input type="radio" name="stillIntubated" value="No" onclick="toggleTubeDetails()" /> No</label>
+      </div>
+
+      <div id="tubeDetailsSection">
+        <div class="input-row">
+          <label for="tubeSize">Tube Size:</label>
+          <select id="tubeSize" onchange="toggleOtherTubeSize()">
+            <option value="7">7.0</option>
+            <option value="7.5">7.5</option>
+            <option value="8" selected>8.0</option>
+            <option value="other">Other</option>
+          </select>
+          <input type="text" id="tubeSizeOther" placeholder="Specify size" style="display:none;margin-top:6px;" />
+        </div>
+        <div class="input-row">
+          <label for="tubeDepth">Depth @ lips:</label>
+          <input type="text" id="tubeDepth" placeholder="23" class="small-input"/>
+        </div>
+      </div>
+
+      <div class="input-row">
+        <label>Difficult intubation?</label><br/>
+        <label><input type="radio" name="diffIntubation" value="Yes" onclick="toggleDiffIntComments()" /> Yes</label>
+        <label><input type="radio" name="diffIntubation" value="No" checked onclick="toggleDiffIntComments()" /> No</label>
+      </div>
+      <div class="input-row hidden" id="diffIntCommentsRow">
+        <label for="diffIntComments">Comments:</label>
+        <textarea id="diffIntComments" rows="2" placeholder="Describe difficulty..."></textarea>
+      </div>
+
+      <div class="input-row">
+        <label>Any issues with intubation?</label><br/>
+        <label><input type="radio" name="intubationIssues" value="Yes" onclick="toggleIntubationIssues()" />Yes</label>
+        <label><input type="radio" name="intubationIssues" value="No" checked onclick="toggleIntubationIssues()" />No</label>
+      </div>
+      <div class="input-row hidden" id="intubationIssuesRow">
+        <label for="intubationIssuesComments">Explain:</label>
+        <textarea id="intubationIssuesComments" rows="2" placeholder="Describe issues..."></textarea>
+      </div>
+
+      <div class="input-row">
+        <label>Any issues with oxygenation/ventilation?</label><br/>
+        <label><input type="radio" name="oxyVentIssues" value="Yes" onclick="toggleOxyVentIssues()" />Yes</label>
+        <label><input type="radio" name="oxyVentIssues" value="No" checked onclick="toggleOxyVentIssues()" />No</label>
+      </div>
+      <div class="input-row hidden" id="oxyVentRow">
+        <label for="oxyVentComments">Explain:</label>
+        <textarea id="oxyVentComments" rows="2" placeholder="Describe issues..."></textarea>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(1)">Back</button>
+        <button class="btn-next" onclick="goToStep(3)">Next</button>
+      </div>
+    </div>
+    
+    <!-- STEP 3: Lines -->
+    <div class="wizard-step" id="step3">
+      <h2>Step 3: Lines</h2>
+      <p>Select all lines placed; additional questions appear below.</p>
+      <select id="linesSelect" multiple size="5" style="width:240px;" onchange="updateLines()">
+        <option value="ArterialLine1">Arterial Line #1</option>
+        <option value="ArterialLine2">Arterial Line #2</option>
+        <option value="CentralLine1">Central Line #1</option>
+        <option value="CentralLine2">Central Line #2</option>
+        <option value="PAC">Pulmonary Artery Catheter (PAC)</option>
+      </select>
+      <div id="linesContainer" style="margin-top:10px;"></div>
+
+      <div class="input-row">
+        <label>Any difficulty with line placement?</label>
+        <label><input type="radio" name="lineDifficulty" value="Yes" onclick="toggleLineDiffComment()" />Yes</label>
+        <label><input type="radio" name="lineDifficulty" value="No" checked onclick="toggleLineDiffComment()" />No</label>
+      </div>
+      <div class="input-row hidden" id="lineDifficultyRow">
+        <label for="lineDiffComments">Difficulty Comments:</label>
+        <textarea id="lineDiffComments" rows="2" placeholder="Describe line difficulty..."></textarea>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(2)">Back</button>
+        <button class="btn-next" onclick="goToStep(4)">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 4: CPB -->
+    <div class="wizard-step" id="step4">
+      <h2>Step 4: Cardiopulmonary Bypass</h2>
+      <div class="input-row">
+        <label>Bypass used?</label><br/>
+        <label><input type="radio" name="cpbUsed" value="Yes" onclick="toggleCPBSection()" />Yes</label>
+        <label><input type="radio" name="cpbUsed" value="No" checked onclick="toggleCPBSection()" />No</label>
+      </div>
+      <div id="cpbDetails" class="hidden">
+        <div class="input-row">
+          <label for="cpbDuration">CPB Duration (hr:min):</label>
+          <input type="text" id="cpbDuration" placeholder="0:55" />
+        </div>
+        <div class="input-row">
+          <label for="crossClamp">Cross Clamp Duration (hr:min):</label>
+          <input type="text" id="crossClamp" placeholder="0:00" />
+        </div>
+        <div class="input-row">
+          <label>Circulatory Arrest?</label><br/>
+          <label><input type="radio" name="circulatoryArrest" value="Yes" onclick="toggleCircArrest()" />Yes</label>
+          <label><input type="radio" name="circulatoryArrest" value="No" checked onclick="toggleCircArrest()" />No</label>
+        </div>
+        <div class="input-row hidden" id="circArrestRow">
+          <label for="circArrestTime">Circ Arrest Time (min):</label>
+          <input type="text" id="circArrestTime" placeholder="mins" class="small-input"/>
+          <label for="cerebralPerfusion" style="margin-left:10px;">Cerebral Perfusion:</label>
+          <select id="cerebralPerfusion">
+            <option value="none" selected>N/A</option>
+            <option value="anterograde">Anterograde</option>
+            <option value="retrograde">Retrograde</option>
+          </select>
+        </div>
+        <div class="input-row">
+          <label for="paced">Paced? (Yes/No/Details)</label>
+          <input type="text" id="paced" placeholder="Yes, epicardial wires, etc." />
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(3)">Back</button>
+        <button class="btn-next" onclick="goToStep(5)">Next</button>
+      </div>
+    </div>
+
+<!-- STEP 5: TEE/Echo Findings -->
+<div class="wizard-step" id="step5">
+  <h2>Step 5: TEE / Echo Findings</h2>
+  <div class="input-row">
+    <label for="echoPre">Pre-TEE Findings:</label>
+    <textarea id="echoPre" rows="12" cols="50">
+LV: 
+RV: 
+AV: 
+MV: 
+TV: 
+PV: 
+Aorta: 
+Effusions: 
+Other: 
+    </textarea>
+  </div>
+  <div class="input-row">
+    <label for="echoPost">Post-TEE Findings:</label>
+    <textarea id="echoPost" rows="12" cols="50">
+LV: 
+RV: 
+AV: 
+MV: 
+TV: 
+PV: 
+Aorta: 
+Effusions: 
+Other: 
+    </textarea>
+  </div>
+  <div class="nav-buttons">
+    <button class="btn-back" onclick="goToStep(4)">Back</button>
+    <button class="btn-next" onclick="goToStep(6)">Next</button>
+  </div>
+</div>
+
+    <!-- STEP 6: Volume In/Out -->
+    <div class="wizard-step" id="step6">
+      <h2>Step 6: Volume In & Out</h2>
+      <div class="input-row">
+        <p>Select all fluids/blood products used; additional fields will appear.</p>
+        <select id="volumeInSelect" multiple size="11" style="width:240px;" onchange="updateVolumeIn()">
+          <option value="Crystalloid" selected>Crystalloid (L)</option>
+          <option value="Colloid">Colloid (L)</option>
+          <option value="PRBC">PRBC (#units)</option>
+          <option value="FFP">FFP (#units)</option>
+          <option value="Platelets">Platelets (#units)</option>
+          <option value="Cryo">Cryo (pools)</option>
+          <option value="Kcentra">PCC/Kcentra</option>
+          <option value="Factor7">Factor VII</option>
+          <option value="Fibcon">Fibrinogen</option>
+          <option value="FEIBA">FEIBA</option>
+          <option value="PumpBlood">Pump Blood (mL)</option>
+          <option value="CellSaver">Cell Saver (mL)</option>
+        </select>
+      </div>
+      <div id="volumeInContainer" style="margin-top:10px;"></div>
+
+      <div class="input-row" style="margin-top:20px;">
+        <label for="ebl">EBL (ml):</label>
+        <input type="text" id="ebl" placeholder="e.g. 500" class="small-input" />
+      </div>
+      <div class="input-row">
+        <label for="uop">Urine Output (ml):</label>
+        <input type="text" id="uop" placeholder="e.g. 600" class="small-input"/>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(5)">Back</button>
+        <button class="btn-next" onclick="goToStep(7)">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 7: Pain Control -->
+    <div class="wizard-step" id="step7">
+      <h2>Step 7: Pain Control</h2>
+      <p>Select all that apply; additional fields appear below.</p>
+      <select id="painSelect" multiple size="5" style="width:240px;" onchange="updatePain()">
+        <option value="Methadone">Methadone</option>
+        <option value="Ketamine">Ketamine</option>
+        <option value="Ketorolac">Ketorolac</option>
+        <option value="Acetaminophen">Acetaminophen</option>
+        <option value="Block">Block</option>
+      </select>
+      <div id="painContainer" style="margin-top:10px;"></div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(6)">Back</button>
+        <button class="btn-next" onclick="goToStep(8)">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 8: Infusions -->
+    <div class="wizard-step" id="step8">
+      <h2>Step 8: Running Infusions</h2>
+      <p>Weight-Based Dosing?
+        <label><input type="radio" name="weightBased" value="Yes" onclick="updateInfusions()" />Yes</label>
+        <label><input type="radio" name="weightBased" value="No" checked onclick="updateInfusions()" />No</label>
+      </p>
+      <p>Select any that apply, specify current dose/rate:</p>
+      <select id="infusionsSelect" multiple size="8" style="width:220px;" onchange="updateInfusions()">
+        <option value="Norepinephrine">Norepinephrine</option>
+        <option value="Epinephrine">Epinephrine</option>
+        <option value="Phenylephrine">Phenylephrine</option>
+        <option value="Vasopressin">Vasopressin</option>
+        <option value="Dobutamine">Dobutamine</option>
+        <option value="Milrinone">Milrinone</option>
+        <option value="Insulin">Insulin</option>
+        <option value="Dexmedetomidine">Dexmedetomidine</option>
+        <option value="Propofol">Propofol</option>
+        <option value="Nicardipine">Nicardipine</option>
+      </select>
+      <div id="infusionsContainer" style="margin-top:10px;"></div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(7)">Back</button>
+        <button class="btn-next" onclick="goToStep(9)">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 9: Reversal & Antibiotics -->
+    <div class="wizard-step" id="step9">
+      <h2>Step 9: Reversal & Antibiotics</h2>
+      <div class="input-row">
+        <label>Reversed? (Yes/No):</label>
+        <select id="reversed">
+          <option value="Yes">Yes</option>
+          <option value="No" selected>No</option>
+        </select>
+      </div>
+
+      <div class="input-row" style="margin-top:15px;">
+        <h3>Antibiotics</h3>
+        <p>Select all that were given, then specify dose/time. If "Other," a text box is provided.</p>
+        <select id="antibioticsSelect" multiple size="5" style="width:220px;" onchange="updateAntibiotics()">
+          <option value="Ancef">Ancef</option>
+          <option value="Vancomycin">Vancomycin</option>
+          <option value="Ciprofloxacin">Ciprofloxacin</option>
+          <option value="Other">Other (specify)</option>
+        </select>
+      </div>
+      <div id="antibioticsContainer" style="margin-top:10px;"></div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(8)">Back</button>
+        <button class="btn-next" onclick="goToStep(10)">Next</button>
+      </div>
+    </div>
+
+    <!-- STEP 10: Last Labs & Other -->
+    <div class="wizard-step" id="step10">
+      <h2>Step 10: Last Labs & Other</h2>
+      <p>Fill in only what you have; only entered labs show in final note.</p>
+      <div class="input-row">
+        <label for="labABG">ABG:</label>
+        <input type="text" id="labABG" placeholder="pH, pCO2, pO2, etc." />
+      </div>
+      <div class="input-row">
+        <label for="labHgb">Hgb:</label>
+        <input type="text" id="labHgb" placeholder="e.g. 9.2" />
+      </div>
+      <div class="input-row">
+        <label for="labPlt">Platelets:</label>
+        <input type="text" id="labPlt" placeholder="e.g. 150k" />
+      </div>
+      <div class="input-row">
+        <label for="labINR">INR:</label>
+        <input type="text" id="labINR" placeholder="e.g. 1.4" />
+      </div>
+      <div class="input-row">
+        <label for="labFib">Fibrinogen:</label>
+        <input type="text" id="labFib" placeholder="mg/dL" />
+      </div>
+      <div class="input-row">
+        <label for="labLactate">Lactate:</label>
+        <input type="text" id="labLactate" placeholder="e.g. 2.0" />
+      </div>
+      <div class="input-row">
+        <label for="labTeg">TEG/ROTEM:</label>
+        <input type="text" id="labTeg" placeholder="ACT, TEG/ROTEM details, etc." />
+      </div>
+
+      <div class="input-row">
+        <label for="otherIssues">Other Issues / Comments</label>
+        <textarea id="otherIssues" rows="2" placeholder="Any additional info or concerns?"></textarea>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn-back" onclick="goToStep(9)">Back</button>
+        <button class="btn-preview" onclick="generatePreview()">Preview</button>
+        <button class="btn-finalize" onclick="finalizeHandoff()">Submit/Finalize</button>
+      </div>
+    </div>
+    
+  </div>
+
+  <!-- PREVIEW PANE -->
+  <div id="previewPane">
+    <h2>Preview / Handoff Notes</h2>
+    <div id="previewContent" style="white-space: pre-line;"></div>
+  </div>
+
+  <script>
+    /* =====================================================
+      ============ WIZARD NAVIGATION ==============
+      ===================================================== */
+    let currentStep = 1;
+    function goToStep(stepNum) {
+      // Hide current
+      document.getElementById("step"+currentStep).classList.remove("active");
+      // Show requested step
+      document.getElementById("step"+stepNum).classList.add("active");
+      currentStep = stepNum;
+      // Scroll to top to avoid extra scrolling on mobile
+      window.scrollTo(0,0);
+    }
+
+    /* =====================================================
+      ============ "Other PMH" Multi-Select Logic ===========
+      ============ + Stroke/TIA + ESRD Toggles =============
+      ===================================================== */
+    function updateOtherPMH() {
+      const select = document.getElementById("otherPMHSelect");
+      const otherContainer = document.getElementById("otherPMHContainer");
+      const strokeTIAContainer = document.getElementById("strokeTIAContainer");
+      const esrdDialysisContainer = document.getElementById("esrdDialysisContainer");
+
+      let foundOther = false;
+      let foundStrokeTIA = false;
+      let foundESRD = false;
+
+      for (let opt of select.options) {
+        if (opt.selected) {
+          if (opt.value === "OtherPMH") {
+            foundOther = true;
+          }
+          if (opt.value === "Stroke/TIA") {
+            foundStrokeTIA = true;
+          }
+          if (opt.value === "ESRD on Dialysis") {
+            foundESRD = true;
+          }
+        }
+      }
+
+      // Toggle "Other" free-text
+      if (foundOther) {
+        otherContainer.classList.remove("hidden");
+      } else {
+        otherContainer.classList.add("hidden");
+        document.getElementById("otherPMHInput").value = "";
+      }
+
+      // Toggle stroke/TIA residual deficits
+      if (foundStrokeTIA) {
+        strokeTIAContainer.classList.remove("hidden");
+      } else {
+        strokeTIAContainer.classList.add("hidden");
+        document.getElementById("strokeTIAInput").value = "";
+      }
+
+      // Toggle ESRD last dialysis
+      if (foundESRD) {
+        esrdDialysisContainer.classList.remove("hidden");
+      } else {
+        esrdDialysisContainer.classList.add("hidden");
+        document.getElementById("lastDialysisInput").value = "";
+      }
+    }
+
+    /* =====================================================
+       ============ AIRWAY TOGGLES =============
+       ===================================================== */
+    function toggleIntubationOther() {
+      const methodSel = document.getElementById("intubationMethod");
+      const otherRow = document.getElementById("intubationOtherRow");
+      if (methodSel.value === "other") {
+        otherRow.classList.remove("hidden");
+      } else {
+        otherRow.classList.add("hidden");
+        document.getElementById("intubationOtherInput").value = "";
+      }
+    }
+    function toggleTubeDetails() {
+      const yesNo = document.querySelector('input[name="stillIntubated"]:checked').value;
+      const tubeSec = document.getElementById("tubeDetailsSection");
+      if (yesNo === "Yes") {
+        tubeSec.style.display = "block";
+      } else {
+        tubeSec.style.display = "none";
+        // Clear tube fields
+        document.getElementById("tubeSize").value = "8";
+        document.getElementById("tubeDepth").value = "";
+        document.getElementById("tubeSizeOther").value = "";
+        document.getElementById("tubeSizeOther").style.display="none";
+      }
+    }
+    function toggleOtherTubeSize() {
+      const sel = document.getElementById("tubeSize");
+      const otherBox = document.getElementById("tubeSizeOther");
+      if (sel.value === "other") {
+        otherBox.style.display = "block";
+      } else {
+        otherBox.style.display = "none";
+        otherBox.value = "";
+      }
+    }
+    function toggleDiffIntComments() {
+      const yesNo = document.querySelector('input[name="diffIntubation"]:checked').value;
+      const row = document.getElementById("diffIntCommentsRow");
+      if (yesNo === "Yes") {
+        row.classList.remove("hidden");
+      } else {
+        row.classList.add("hidden");
+        document.getElementById("diffIntComments").value = "";
+      }
+    }
+    function toggleIntubationIssues() {
+      const yesNo = document.querySelector('input[name="intubationIssues"]:checked').value;
+      const row = document.getElementById("intubationIssuesRow");
+      if (yesNo === "Yes") {
+        row.classList.remove("hidden");
+      } else {
+        row.classList.add("hidden");
+        document.getElementById("intubationIssuesComments").value = "";
+      }
+    }
+    function toggleOxyVentIssues() {
+      const yesNo = document.querySelector('input[name="oxyVentIssues"]:checked').value;
+      const row = document.getElementById("oxyVentRow");
+      if (yesNo === "Yes") {
+        row.classList.remove("hidden");
+      } else {
+        row.classList.add("hidden");
+        document.getElementById("oxyVentComments").value = "";
+      }
+    }
+
+    /* =====================================================
+       ============ LINES SECTION =============
+       ===================================================== */
+    function updateLines() {
+      const linesSelect = document.getElementById("linesSelect");
+      const container = document.getElementById("linesContainer");
+      container.innerHTML = ""; //clear
+      let linesChosen = [];
+      for (let opt of linesSelect.options) {
+        if (opt.selected) {
+          linesChosen.push(opt.value);
+        }
+      }
+      if (linesChosen.length === 0) return;
+
+      let linesHTML = "<table><tbody>";
+      linesChosen.forEach(line => {
+        if (line === "ArterialLine1" || line === "ArterialLine2") {
+          linesHTML += `
+            <tr>
+              <td colspan="2" style="font-weight:bold;">
+                ${line.replace("ArterialLine","Arterial Line #")}:
+              </td>
+            </tr>
+            <tr>
+              <td style="width:130px;">Side/Site:</td>
+              <td>
+                <select id="${line}_side">
+                  <option value="Right">Right</option>
+                  <option value="Left">Left</option>
+                </select>
+                <select id="${line}_site" style="margin-left:5px;">
+                  <option value="Radial">Radial</option>
+                  <option value="Brachial">Brachial</option>
+                  <option value="Axillary">Axillary</option>
+                  <option value="Femoral">Femoral</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        } else if (line === "CentralLine1" || line === "CentralLine2") {
+          linesHTML += `
+            <tr>
+              <td colspan="2" style="font-weight:bold;">
+                ${line.replace("Line"," Line #")}:
+              </td>
+            </tr>
+            <tr>
+              <td>Side:</td>
+              <td>
+                <select id="${line}_sideCL">
+                  <option value="Right">Right</option>
+                  <option value="Left">Left</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td>Location:</td>
+              <td>
+                <select id="${line}_locationCL" onchange="toggleOtherCentralLocation('${line}')">
+                  <option value="internal jugular">Internal Jugular</option>
+                  <option value="femoral">Femoral</option>
+                  <option value="subclavian">Subclavian</option>
+                  <option value="other">Other</option>
+                </select>
+                <input type="text" id="${line}_otherLoc" placeholder="Specify location" style="display:none;margin-left:5px;"/>
+              </td>
+            </tr>
+            <tr>
+              <td>Type:</td>
+              <td>
+                <select id="${line}_type" onchange="toggleOtherType('${line}')">
+                  <option value="MAC">MAC</option>
+                  <option value="singleLumen">Single Lumen</option>
+                  <option value="doubleLumen">Double Lumen</option>
+                  <option value="other">Other</option>
+                </select>
+                <input type="text" id="${line}_typeOther" placeholder="Specify type" style="display:none;margin-left:5px;"/>
+              </td>
+            </tr>
+            <tr>
+              <td>Line Size (Fr):</td>
+              <td>
+                <select id="${line}_size" onchange="toggleOtherSize('${line}')">
+                  <option value="7">7 Fr</option>
+                  <option value="8">8 Fr</option>
+                  <option value="8.5">8.5 Fr</option>
+                  <option value="9" selected>9 Fr</option>
+                  <option value="other">Other</option>
+                </select>
+                <input type="text" id="${line}_sizeOther" placeholder="Specify size" style="display:none;margin-left:5px;"/>
+              </td>
+            </tr>
+            <tr>
+              <td>Line Length (cm):</td>
+              <td>
+                <select id="${line}_length" onchange="toggleOtherLength('${line}')">
+                  <option value="10">10 cm</option>
+                  <option value="16">16 cm</option>
+                  <option value="other">Other</option>
+                </select>
+                <input type="text" id="${line}_lengthOther" placeholder="Specify cm" style="display:none;margin-left:5px;"/>
+              </td>
+            </tr>
+          `;
+        } else if (line === "PAC") {
+          linesHTML += `
+            <tr>
+              <td colspan="2" style="font-weight:bold;">Pulmonary Artery Catheter:</td>
+            </tr>
+            <tr>
+              <td>PAC Depth (cm):</td>
+              <td><input type="text" id="pacDepth" placeholder="e.g. 57" class="small-input"/></td>
+            </tr>
+            <tr>
+              <td>PAC Type:</td>
+              <td>
+                <select id="pacType">
+                  <option value="standard">Standard</option>
+                  <option value="mixedVenous">Mixed Venous</option>
+                  <option value="pacing">Pacing</option>
+                  <option value="cco">CCO</option>
+                </select>
+              </td>
+            </tr>
+          `;
+        }
+      });
+      linesHTML += "</tbody></table>";
+      container.innerHTML = linesHTML;
+    }
+    function toggleOtherCentralLocation(lineId) {
+      const sel = document.getElementById(`${lineId}_locationCL`);
+      const otherBox = document.getElementById(`${lineId}_otherLoc`);
+      if (sel.value === "other") {
+        otherBox.style.display = "inline-block";
+      } else {
+        otherBox.style.display = "none";
+        otherBox.value = "";
+      }
+    }
+    function toggleOtherType(lineId) {
+      const sel = document.getElementById(`${lineId}_type`);
+      const otherBox = document.getElementById(`${lineId}_typeOther`);
+      if (sel.value === "other") {
+        otherBox.style.display = "inline-block";
+      } else {
+        otherBox.style.display = "none";
+        otherBox.value = "";
+      }
+    }
+    function toggleOtherSize(lineId) {
+      const sel = document.getElementById(`${lineId}_size`);
+      const otherBox = document.getElementById(`${lineId}_sizeOther`);
+      if (sel.value === "other") {
+        otherBox.style.display = "inline-block";
+      } else {
+        otherBox.style.display = "none";
+        otherBox.value = "";
+      }
+    }
+    function toggleOtherLength(lineId) {
+      const sel = document.getElementById(`${lineId}_length`);
+      const otherBox = document.getElementById(`${lineId}_lengthOther`);
+      if (sel.value === "other") {
+        otherBox.style.display = "inline-block";
+      } else {
+        otherBox.style.display = "none";
+        otherBox.value = "";
+      }
+    }
+    function toggleLineDiffComment() {
+      const yesNo = document.querySelector('input[name="lineDifficulty"]:checked').value;
+      const row = document.getElementById("lineDifficultyRow");
+      if (yesNo === "Yes") {
+        row.classList.remove("hidden");
+      } else {
+        row.classList.add("hidden");
+        document.getElementById("lineDiffComments").value = "";
+      }
+    }
+
+    /* =====================================================
+       ============ CPB Toggle =============
+       ===================================================== */
+    function toggleCPBSection() {
+      const cpbYesNo = document.querySelector('input[name="cpbUsed"]:checked').value;
+      const cpbDetails = document.getElementById("cpbDetails");
+      if (cpbYesNo === "Yes") {
+        cpbDetails.classList.remove("hidden");
+      } else {
+        cpbDetails.classList.add("hidden");
+        document.getElementById("cpbDuration").value = "";
+        document.getElementById("crossClamp").value = "";
+        document.querySelector('input[name="circulatoryArrest"][value="No"]').checked = true;
+        toggleCircArrest();
+        document.getElementById("paced").value = "";
+      }
+    }
+    function toggleCircArrest() {
+      const yesNo = document.querySelector('input[name="circulatoryArrest"]:checked').value;
+      const row = document.getElementById("circArrestRow");
+      if (yesNo === "Yes") {
+        row.classList.remove("hidden");
+      } else {
+        row.classList.add("hidden");
+        document.getElementById("circArrestTime").value = "";
+        document.getElementById("cerebralPerfusion").value = "none";
+      }
+    }
+
+    /* =====================================================
+       ============ VOLUME IN =============
+       ===================================================== */
+    function updateVolumeIn() {
+      const select = document.getElementById("volumeInSelect");
+      const container = document.getElementById("volumeInContainer");
+      container.innerHTML = "";
+
+      let table = `<table><thead><tr><th>Fluid/Product</th><th>Amount</th></tr></thead><tbody>`;
+      let chosen = 0;
+      for (let option of select.options) {
+        if (option.selected) {
+          chosen++;
+          let placeholder = "ml";
+          let unitLabel = "ml";
+          switch (option.value) {
+            case "Crystalloid":
+            case "Colloid":
+              placeholder = "";
+              unitLabel = "L";
+              break;
+            case "PRBC":
+            case "FFP":
+            case "Platelets":
+              placeholder = "";
+              unitLabel = "#units";
+              break;
+            case "Cryo":
+              placeholder = "";
+              unitLabel = "pools";
+              break;
+            case "Kcentra":
+            case "FEIBA":
+              placeholder = "";
+              unitLabel = "units?";
+              break;
+            case "Factor7":
+              placeholder = "";
+              unitLabel = "mg or units";
+              break;
+            case "Fibcon":
+              placeholder = "";
+              unitLabel = "mg";
+              break;
+            case "PumpBlood":
+              placeholder = "";
+              unitLabel = "mL";
+              break;
+            case "CellSaver":
+              placeholder = "";
+              unitLabel = "mL";
+              break;
+          }
+
+          const volID = "volIn_" + option.value.replace(/\s/g,'_');
+          table += `
+            <tr>
+              <td>${option.value.replace("PumpBlood","Pump Blood").replace("CellSaver","Cell Saver")}</td>
+              <td>
+                <input type="text" id="${volID}" class="small-input" placeholder="${placeholder}" />
+                <span style="margin-left:5px;">${unitLabel}</span>
+              </td>
+            </tr>
+          `;
+        }
+      }
+      table += "</tbody></table>";
+      if (chosen > 0) {
+        container.innerHTML = table;
+      }
+    }
+
+    /* =====================================================
+       ============ PAIN CONTROL =============
+       ===================================================== */
+    function updatePain() {
+      const select = document.getElementById("painSelect");
+      const container = document.getElementById("painContainer");
+      container.innerHTML = "";
+
+      let table = `<table><thead><tr><th>Pain Med</th><th>Dose</th><th>Time</th></tr></thead><tbody>`;
+      let chosen = 0;
+      for (let opt of select.options) {
+        if (opt.selected) {
+          chosen++;
+          if (opt.value === "Methadone") {
+            table += `
+              <tr>
+                <td>Methadone</td>
+                <td><input type="text" id="painMethadoneDose" placeholder="Dose mg?" /></td>
+                <td>N/A</td>
+              </tr>
+            `;
+          } else if (opt.value === "Ketamine") {
+            table += `
+              <tr>
+                <td>Ketamine</td>
+                <td><input type="text" id="painKetamineDose" placeholder="Dose mg?" /></td>
+                <td>N/A</td>
+              </tr>
+            `;
+          } else if (opt.value === "Ketorolac") {
+            table += `
+              <tr>
+                <td>Ketorolac</td>
+                <td><input type="text" id="painKetorolacDose" placeholder="Dose mg?" /></td>
+                <td><input type="text" id="painKetorolacTime" placeholder="Time?" /></td>
+              </tr>
+            `;
+          } else if (opt.value === "Acetaminophen") {
+            table += `
+              <tr>
+                <td>Acetaminophen</td>
+                <td>N/A</td>
+                <td><input type="text" id="painAcetaTime" placeholder="Time given?" /></td>
+              </tr>
+            `;
+          } else if (opt.value === "Block") {
+            table += `
+              <tr>
+                <td>Block</td>
+                <td><input type="text" id="painBlockType" placeholder="Type or details?" /></td>
+                <td>N/A</td>
+              </tr>
+            `;
+          }
+        }
+      }
+      table += "</tbody></table>";
+      if (chosen > 0) {
+        container.innerHTML = table;
+      }
+    }
+
+    /* =====================================================
+       ============ INFUSIONS & Antibiotics =============
+       ===================================================== */
+    function getInfusionUnit(drug, isWeightBased) {
+      // Hard-coded logic:
+      // - Dobutamine always weight-based
+      // - Dex, Prop, Milrinone always weight-based
+      // - Vasopressin never
+      // - Nicardipine never
+      // - Insulin never
+      // Epi, NE, Phenylephrine => toggles
+      if (drug === "Dobutamine") return "mcg/kg/min";
+      if (drug === "Dexmedetomidine") return "mcg/kg/hr";
+      if (drug === "Propofol") return "mg/kg/hr";
+      if (drug === "Milrinone") return "mcg/kg/min";
+      if (drug === "Vasopressin") return "units/min";
+      if (drug === "Nicardipine") return "mg/hr";
+      if (drug === "Insulin") return "units/hr";
+
+      if (drug === "Norepinephrine" || drug === "Epinephrine" || drug === "Phenylephrine") {
+        return (isWeightBased === "Yes") ? "mcg/kg/min" : "mcg/min";
+      }
+      return "units";
+    }
+
+    function updateInfusions() {
+      const select = document.getElementById("infusionsSelect");
+      const container = document.getElementById("infusionsContainer");
+      container.innerHTML = ""; // clear
+      const weightBased = document.querySelector('input[name="weightBased"]:checked').value;
+
+      let tableHTML = `
+        <table>
+          <thead><tr><th>Medication</th><th>Current Dose/Rate</th></tr></thead>
+          <tbody>
+      `;
+      let chosen = 0;
+      for (let option of select.options) {
+        if (option.selected) {
+          chosen++;
+          let unitLabel = getInfusionUnit(option.value, weightBased);
+          tableHTML += `
+            <tr>
+              <td>${option.value}</td>
+              <td>
+                <input type="text" id="dose_${option.value.replace(/\s/g,'_')}" style="width:70px;" />
+                <span style="margin-left:5px;">${unitLabel}</span>
+              </td>
+            </tr>
+          `;
+        }
+      }
+      tableHTML += `</tbody></table>`;
+      if (chosen > 0) {
+        container.innerHTML = tableHTML;
+      }
+    }
+
+    function updateAntibiotics() {
+      const select = document.getElementById("antibioticsSelect");
+      const container = document.getElementById("antibioticsContainer");
+      container.innerHTML = "";
+      let tableHTML = `
+        <table>
+          <thead>
+            <tr><th>Antibiotic</th><th>Dose</th><th>Time</th></tr>
+          </thead>
+          <tbody>
+      `;
+      let chosenCount = 0;
+      for (let opt of select.options) {
+        if (opt.selected) {
+          chosenCount++;
+          if (opt.value === "Other") {
+            tableHTML += `
+              <tr>
+                <td><input type="text" id="abx_Other_name" placeholder="Enter antibiotic name" /></td>
+                <td><input type="text" id="abx_Other_dose" placeholder="Dose" /></td>
+                <td><input type="text" id="abx_Other_time" placeholder="Time" /></td>
+              </tr>
+            `;
+          } else {
+            tableHTML += `
+              <tr>
+                <td>${opt.value}</td>
+                <td><input type="text" id="abx_${opt.value}_dose" placeholder="Dose" /></td>
+                <td><input type="text" id="abx_${opt.value}_time" placeholder="Time" /></td>
+              </tr>
+            `;
+          }
+        }
+      }
+      tableHTML += `</tbody></table>`;
+      if (chosenCount > 0) {
+        container.innerHTML = tableHTML;
+      }
+    }
+
+    /* =====================================================
+      ============ PREVIEW & FINALIZE =============
+      ===================================================== */
+    function generatePreview() {
+      let previewText = "";
+
+      // STEP1 Basic:
+      const loc = document.getElementById("location").value;
+      const ageGender = document.getElementById("ageGender").value;
+      const primaryDiag = document.getElementById("primaryDiag").value;
+      const surgeryPerf = document.getElementById("surgeryPerf").value;
+      
+      // Other PMH multi-select
+      const pmhSelect = document.getElementById("otherPMHSelect");
+      let pmhArray = [];
+      let otherPMHText = document.getElementById("otherPMHInput").value.trim();
+      let strokeTIARes = document.getElementById("strokeTIAInput").value.trim();
+      let esrdDialysis = document.getElementById("lastDialysisInput").value.trim();
+
+      for (let opt of pmhSelect.options) {
+        if (opt.selected) {
+          if (opt.value === "OtherPMH" && otherPMHText) {
+            pmhArray.push(`Other: ${otherPMHText}`);
+          }
+          else if (opt.value === "Stroke/TIA") {
+            let strokeLine = "Stroke/TIA";
+            if (strokeTIARes) {
+              strokeLine += ` (residual deficits: ${strokeTIARes})`;
+            }
+            pmhArray.push(strokeLine);
+          }
+          else if (opt.value === "ESRD on Dialysis") {
+            let esrdLine = "ESRD on Dialysis";
+            if (esrdDialysis) {
+              esrdLine += ` (last dialysis: ${esrdDialysis})`;
+            }
+            pmhArray.push(esrdLine);
+          }
+          else if (opt.value !== "OtherPMH") {
+            pmhArray.push(opt.value);
+          }
+        }
+      }
+
+      previewText += `Handoff Location: ${loc}\n`;
+      previewText += `${ageGender}\n`;
+      if (primaryDiag.trim()) previewText += `Primary Diagnosis: ${primaryDiag}\n`;
+      if (surgeryPerf.trim()) previewText += `Surgery Performed: ${surgeryPerf}\n`;
+      if (pmhArray.length > 0) {
+        previewText += `Other PMH: ${pmhArray.join(", ")}\n`;
+      }
+      previewText += "\n";
+
+      // STEP2 Airway:
+      let methodVal = document.getElementById("intubationMethod").value;
+      const otherMethod = document.getElementById("intubationOtherInput").value.trim();
+      if (methodVal === "other" && otherMethod) {
+        methodVal = `Other: ${otherMethod}`;
+      }
+      const viewGrade = document.getElementById("viewGrade").value;
+      const isStillInt = document.querySelector('input[name="stillIntubated"]:checked').value;
+      let tubeLine = "";
+      if (isStillInt === "Yes") {
+        let sizeSel = document.getElementById("tubeSize").value;
+        if (sizeSel === "other") {
+          sizeSel = document.getElementById("tubeSizeOther").value.trim() || "Other size";
+        }
+        const depthSel = document.getElementById("tubeDepth").value;
+        tubeLine = `Tube size: ${sizeSel}, Depth @ lips: ${depthSel}\n`;
+      }
+
+      const diffInt = document.querySelector('input[name="diffIntubation"]:checked').value;
+      const diffComment = document.getElementById("diffIntComments").value;
+      const intubIssues = document.querySelector('input[name="intubationIssues"]:checked').value;
+      const intubIssuesComments = document.getElementById("intubationIssuesComments").value;
+      const oxyVentIssues = document.querySelector('input[name="oxyVentIssues"]:checked').value;
+      const oxyVentComments = document.getElementById("oxyVentComments").value;
+
+      previewText += `AIRWAY\nIntubation method: ${methodVal}\nView Grade: ${viewGrade}\nStill intubated? ${isStillInt}\n`;
+      if (isStillInt === "Yes") previewText += tubeLine;
+      if (diffInt === "Yes" && diffComment.trim()) {
+        previewText += `Difficult Intubation Comments: ${diffComment}\n`;
+      }
+      if (intubIssues === "Yes" && intubIssuesComments.trim()) {
+        previewText += `Issues with intubation: ${intubIssuesComments}\n`;
+      }
+      if (oxyVentIssues === "Yes" && oxyVentComments.trim()) {
+        previewText += `Issues with O2/Ventilation: ${oxyVentComments}\n`;
+      }
+      previewText += "\n";
+
+      // STEP3 Lines
+      previewText += "LINES\n";
+      const linesSelect = document.getElementById("linesSelect");
+      let linesChosen = [];
+      for (let opt of linesSelect.options) {
+        if (opt.selected) linesChosen.push(opt.value);
+      }
+      if (linesChosen.length === 0) {
+        previewText += "No invasive lines.\n\n";
+      } else {
+        linesChosen.forEach(line => {
+          if (line === "ArterialLine1" || line === "ArterialLine2") {
+            const sideEl = document.getElementById(`${line}_side`);
+            const siteEl = document.getElementById(`${line}_site`);
+            previewText += `${line.replace("ArterialLine","Arterial Line #")}: ${sideEl.value} ${siteEl.value}\n`;
+          } else if (line === "CentralLine1" || line === "CentralLine2") {
+            const sideVal = document.getElementById(`${line}_sideCL`).value;
+            const locSel = document.getElementById(`${line}_locationCL`).value;
+            const otherLoc = document.getElementById(`${line}_otherLoc`).value;
+            let finalLoc = locSel;
+            if (locSel === "other" && otherLoc.trim()) {
+              finalLoc = otherLoc;
+            }
+            const typeVal = document.getElementById(`${line}_type`).value;
+            const typeOther = document.getElementById(`${line}_typeOther`).value;
+            let lineType = typeVal;
+            if (typeVal === "other" && typeOther.trim()) {
+              lineType = typeOther;
+            }
+            const sizeSel = document.getElementById(`${line}_size`).value;
+            const sizeOth = document.getElementById(`${line}_sizeOther`).value;
+            let lineSizeDisplay = sizeSel;
+            if (sizeSel === "other" && sizeOth.trim()) {
+              lineSizeDisplay = sizeOth;
+            }
+            const lengthSel = document.getElementById(`${line}_length`).value;
+            const lengthOth = document.getElementById(`${line}_lengthOther`).value;
+            let lineLengthDisplay = lengthSel;
+            if (lengthSel === "other" && lengthOth.trim()) {
+              lineLengthDisplay = lengthOth;
+            }
+            previewText += `${line.replace("Line"," Line #")}: ${sideVal} ${finalLoc}, Type: ${lineType}, Size: ${lineSizeDisplay}, Length: ${lineLengthDisplay}\n`;
+          } else if (line === "PAC") {
+            const pacDepth = document.getElementById("pacDepth").value;
+            const pacType = document.getElementById("pacType").value;
+            previewText += `Pulmonary Artery Catheter: Depth ${pacDepth} cm, Type: ${pacType}\n`;
+          }
+        });
+        const lineDiff = document.querySelector('input[name="lineDifficulty"]:checked').value;
+        if (lineDiff === "Yes") {
+          const lineDiffComments = document.getElementById("lineDiffComments").value;
+          previewText += `Line difficulty: Yes. Comments: ${lineDiffComments}\n`;
+        } else {
+          previewText += `Line difficulty: No\n`;
+        }
+        previewText += "\n";
+      }
+
+      // STEP4 CPB
+      const cpbUsed = document.querySelector('input[name="cpbUsed"]:checked').value;
+      previewText += "CARDIOPULMONARY BYPASS\n";
+      if (cpbUsed === "Yes") {
+        const cpbDur = document.getElementById("cpbDuration").value;
+        const crossClamp = document.getElementById("crossClamp").value;
+        const circArrest = document.querySelector('input[name="circulatoryArrest"]:checked').value;
+        const circArrestTime = document.getElementById("circArrestTime").value;
+        const cerebralPerf = document.getElementById("cerebralPerfusion").value;
+        const paced = document.getElementById("paced").value;
+        previewText += `Bypass used? Yes\nCPB duration: ${cpbDur}\nCross clamp duration: ${crossClamp}\nCirculatory arrest? ${circArrest}\n`;
+        if (circArrest === "Yes") {
+          previewText += `Circ arrest time: ${circArrestTime} min\nCerebral perfusion: ${cerebralPerf}\n`;
+        }
+        previewText += `Paced? ${paced}\n\n`;
+      } else {
+        previewText += "Bypass used? No\n\n";
+      }
+
+      // STEP5 TEE
+      const echoPre = document.getElementById("echoPre").value;
+      const echoPost = document.getElementById("echoPost").value;
+      previewText += "TEE FINDINGS\n";
+      if (echoPre.trim()) {
+        previewText += `Pre-TEE: ${echoPre}\n\n`;
+      } else {
+        previewText += "Pre-TEE: [none]\n\n";
+      }
+      if (echoPost.trim()) {
+        previewText += `Post-TEE: ${echoPost}\n\n`;
+      } else {
+        previewText += "Post-TEE: [none]\n\n";
+      }
+
+      // STEP6 Volume In
+      previewText += "VOLUME IN\n";
+      const volSelect = document.getElementById("volumeInSelect");
+      let anyVolumeIn = false;
+      for (let opt of volSelect.options) {
+        if (opt.selected) {
+          anyVolumeIn = true;
+          const volId = "volIn_" + opt.value.replace(/\s/g,'_');
+          const inputVal = document.getElementById(volId)?.value;
+          if (inputVal && inputVal.trim()) {
+            let unitLabel = "";
+            switch (opt.value) {
+              case "Crystalloid": unitLabel = " L"; break;
+              case "Colloid": unitLabel = " L"; break;
+              case "PRBC": unitLabel = " units"; break;
+              case "FFP": unitLabel = " units"; break;
+              case "Platelets": unitLabel = " units"; break;
+              case "Cryo": unitLabel = " pools"; break;
+              case "Kcentra":
+              case "FEIBA": unitLabel = " units?"; break;
+              case "Factor7": unitLabel = " mg/units"; break;
+              case "Fibcon": unitLabel = " mg"; break;
+              case "PumpBlood": unitLabel = " mL"; break;
+              case "CellSaver": unitLabel = " mL"; break;
+            }
+            previewText += `${opt.value.replace("PumpBlood","Pump Blood").replace("CellSaver","Cell Saver")}: ${inputVal}${unitLabel}\n`;
+          }
+        }
+      }
+      if (!anyVolumeIn) {
+        previewText += "None.\n";
+      }
+
+      // VOLUME OUT
+      const eblVal = document.getElementById("ebl").value;
+      const uopVal = document.getElementById("uop").value;
+      previewText += "\nVOLUME OUT\n";
+      if (eblVal.trim()) previewText += `EBL: ${eblVal} ml\n`;
+      if (uopVal.trim()) previewText += `UOP: ${uopVal} ml\n`;
+      previewText += "\n";
+
+      // STEP7 Pain
+      previewText += "PAIN CONTROL\n";
+      const painSel = document.getElementById("painSelect");
+      let chosenPain = [];
+      for (let opt of painSel.options) {
+        if (opt.selected) chosenPain.push(opt.value);
+      }
+      if (chosenPain.length === 0) {
+        previewText += "No special pain items.\n\n";
+      } else {
+        chosenPain.forEach(item => {
+          if (item === "Methadone") {
+            const dose = document.getElementById("painMethadoneDose")?.value || "";
+            previewText += `Methadone: ${dose} mg\n`;
+          }
+          if (item === "Ketamine") {
+            const kdose = document.getElementById("painKetamineDose")?.value || "";
+            previewText += `Ketamine: ${kdose} mg\n`;
+          }
+          if (item === "Ketorolac") {
+            const kdose = document.getElementById("painKetorolacDose")?.value || "";
+            const ktime = document.getElementById("painKetorolacTime")?.value || "";
+            previewText += `Ketorolac: ${kdose} mg, time ${ktime}\n`;
+          }
+          if (item === "Acetaminophen") {
+            const aTime = document.getElementById("painAcetaTime")?.value || "";
+            previewText += `Acetaminophen given at ${aTime}\n`;
+          }
+          if (item === "Block") {
+            const blockType = document.getElementById("painBlockType")?.value || "";
+            previewText += `Block: ${blockType}\n`;
+          }
+        });
+        previewText += "\n";
+      }
+
+      // STEP8 Infusions
+      previewText += "RUNNING INFUSIONS\n";
+      const infSel = document.getElementById("infusionsSelect");
+      let chosenInf = [];
+      for (let opt of infSel.options) {
+        if (opt.selected) {
+          chosenInf.push(opt.value);
+        }
+      }
+      if (chosenInf.length === 0) {
+        previewText += "None.\n\n";
+      } else {
+        previewText += "Current infusions:\n";
+        const weightBased = document.querySelector('input[name="weightBased"]:checked').value;
+        chosenInf.forEach(drug => {
+          const doseId = "dose_" + drug.replace(/\s/g,'_');
+          const doseVal = document.getElementById(doseId)?.value || "";
+          let infusionUnits = getInfusionUnit(drug, weightBased);
+          previewText += ` - ${drug}: ${doseVal} ${infusionUnits}\n`;
+        });
+        previewText += "\n";
+      }
+
+      // STEP9 Reversal & Antibiotics
+      const reversed = document.getElementById("reversed").value;
+      previewText += `Reversed? ${reversed}\n\n`;
+      previewText += "ANTIBIOTICS\n";
+      const antibioticSelect = document.getElementById("antibioticsSelect");
+      let abxSummary = [];
+      for (let opt of antibioticSelect.options) {
+        if (opt.selected) {
+          if (opt.value === "Other") {
+            const nameEl = document.getElementById("abx_Other_name")?.value || "";
+            const doseEl = document.getElementById("abx_Other_dose")?.value || "";
+            const timeEl = document.getElementById("abx_Other_time")?.value || "";
+            abxSummary.push(`${nameEl} (${doseEl} @ ${timeEl})`);
+          } else {
+            const doseEl = document.getElementById(`abx_${opt.value}_dose`)?.value || "";
+            const timeEl = document.getElementById(`abx_${opt.value}_time`)?.value || "";
+            abxSummary.push(`${opt.value} (${doseEl} @ ${timeEl})`);
+          }
+        }
+      }
+      if (abxSummary.length === 0) {
+        previewText += "None given.\n\n";
+      } else {
+        previewText += abxSummary.join("; ") + "\n\n";
+      }
+
+      // STEP10 Last Labs & Other
+      const labABG = document.getElementById("labABG").value;
+      const labHgb = document.getElementById("labHgb").value;
+      const labPlt = document.getElementById("labPlt").value;
+      const labINR = document.getElementById("labINR").value;
+      const labFib = document.getElementById("labFib").value;
+      const labLactate = document.getElementById("labLactate").value;
+      const labTeg = document.getElementById("labTeg").value;
+      const otherIssues = document.getElementById("otherIssues").value;
+
+      previewText += "LAST LABS\n";
+      let labsString = "";
+      if (labABG.trim()) labsString += `ABG: ${labABG}\n`;
+      if (labHgb.trim()) labsString += `Hgb: ${labHgb}\n`;
+      if (labPlt.trim()) labsString += `Platelets: ${labPlt}\n`;
+      if (labINR.trim()) labsString += `INR: ${labINR}\n`;
+      if (labFib.trim()) labsString += `Fibrinogen: ${labFib}\n`;
+      if (labLactate.trim()) labsString += `Lactate: ${labLactate}\n`;
+      if (labTeg.trim()) labsString += `TEG/ROTEM: ${labTeg}\n`;
+      previewText += labsString ? labsString + "\n" : "No labs entered.\n\n";
+
+      if (otherIssues.trim()) {
+        previewText += "OTHER ISSUES\n" + otherIssues + "\n";
+      }
+
+      // Show in preview pane
+      document.getElementById("previewContent").textContent = previewText;
+      document.getElementById("previewPane").style.display = "block";
+      window.scrollTo(0, document.getElementById("previewPane").offsetTop);
+    }
+
+    function finalizeHandoff() {
+      generatePreview();
+      const finalText = document.getElementById("previewContent").textContent;
+
+      const polishedHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Final Handoff Note</title>
+  <style>
+    body {
+      margin: 0 auto;
+      padding: 20px;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: #fdfdfd;
+      color: #111;
+      max-width: 700px;
+      line-height: 1.4;
+    }
+    .report-wrapper {
+      background: #ffffff;
+      border: 1px solid #ccc;
+      padding: 20px;
+      border-radius: 6px;
+    }
+    h1 {
+      margin-top: 0;
+      font-size: 1.4rem;
+      text-align: center;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #ccc;
+    }
+    .report-body {
+      margin-top: 15px;
+      white-space: pre-line;
+    }
+  </style>
+</head>
+<body>
+  <div class="report-wrapper">
+    <h1>Cardiac Anesthesia Handoff Summary</h1>
+    <div class="report-body">
+      ${finalText.replace(/\n/g, "<br/>")}
+    </div>
+  </div>
+</body>
+</html>
+      `;
+
+      // Replace the current page with final polished output
+      document.open();
+      document.write(polishedHtml);
+      document.close();
+    }
+  </script>
+
+</body>
+</html>
